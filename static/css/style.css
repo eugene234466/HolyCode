@@ -597,3 +597,18 @@ footer p { font-family: 'Cinzel', serif; font-size: 0.85rem; color: var(--gold-d
     .submissions-grid, .archive-grid { grid-template-columns: 1fr; }
     .submission-actions-full { flex-direction: column; }
 }
+
+/* ─── LIKED STATE ─── */
+.like-btn.liked {
+    color: #c0392b !important;
+    border-color: #c0392b !important;
+    background: rgba(192,57,43,0.08) !important;
+}
+
+.like-btn {
+    transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.1s;
+}
+
+.like-btn:active {
+    transform: scale(0.95);
+}
