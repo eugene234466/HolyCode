@@ -1,4 +1,6 @@
 import os
+import json
+from datetime import datetime
 from flask import Flask, request, jsonify, render_template, redirect, url_for, send_file
 from services.scheduler import start_scheduler, generate_daily_devotional, generate_daily_challenge
 from services.groq_ai import explain_concept
@@ -13,12 +15,10 @@ with app.app_context():
     conn = get_conn()
     cur = conn.cursor()
 
-    # Check if devotional exists for today
     cur.execute("SELECT id FROM daily_devotional WHERE DATE(created_at) = CURRENT_DATE")
     if not cur.fetchone():
         generate_daily_devotional()
 
-    # Check if challenge exists for today
     cur.execute("SELECT id FROM daily_challenge WHERE DATE(created_at) = CURRENT_DATE")
     if not cur.fetchone():
         generate_daily_challenge()
@@ -35,7 +35,6 @@ def index():
     conn = get_conn()
     cur = conn.cursor()
 
-    # Today's devotional
     cur.execute("""
         SELECT * FROM daily_devotional
         WHERE DATE(created_at) = CURRENT_DATE
@@ -43,7 +42,6 @@ def index():
     """)
     devotional = cur.fetchone()
 
-    # Today's challenge
     cur.execute("""
         SELECT * FROM daily_challenge
         WHERE DATE(created_at) = CURRENT_DATE
@@ -51,14 +49,15 @@ def index():
     """)
     challenge = cur.fetchone()
 
-    # Submissions for today's challenge
+    # Fetch submissions for ANY of today's challenges
     submissions = []
     if challenge:
         cur.execute("""
-            SELECT * FROM submissions
-            WHERE challenge_id = %s
-            ORDER BY likes DESC, created_at DESC
-        """, (challenge[0],))
+            SELECT s.* FROM submissions s
+            JOIN daily_challenge c ON s.challenge_id = c.id
+            WHERE DATE(c.created_at) = CURRENT_DATE
+            ORDER BY s.likes DESC, s.created_at DESC
+        """)
         submissions = cur.fetchall()
 
     cur.close()
@@ -67,7 +66,8 @@ def index():
     return render_template("index.html",
                            devotional=devotional,
                            challenge=challenge,
-                           submissions=submissions)
+                           submissions=submissions,
+                           now=datetime.now())
 
 
 @app.route("/archive")
@@ -114,7 +114,7 @@ def submission(id):
 @app.route("/submit", methods=["POST"])
 def submit():
     username = request.form.get("username", "Anonymous").strip() or "Anonymous"
-    format = request.form.get("format", "code").strip()
+    fmt = request.form.get("format", "code").strip()
     language = request.form.get("language", "").strip()
     code = request.form.get("code", "").strip()
 
@@ -124,7 +124,6 @@ def submit():
     conn = get_conn()
     cur = conn.cursor()
 
-    # Get today's challenge
     cur.execute("""
         SELECT id FROM daily_challenge
         WHERE DATE(created_at) = CURRENT_DATE
@@ -140,7 +139,7 @@ def submit():
     cur.execute("""
         INSERT INTO submissions (challenge_id, username, format, language, code)
         VALUES (%s, %s, %s, %s, %s)
-    """, (challenge[0], username, format, language, code))
+    """, (challenge[0], username, fmt, language, code))
 
     conn.commit()
     cur.close()
@@ -156,7 +155,6 @@ def like(submission_id):
     conn = get_conn()
     cur = conn.cursor()
 
-    # Check if already liked
     cur.execute("""
         SELECT id FROM likes
         WHERE submission_id = %s AND ip_address = %s
@@ -167,13 +165,11 @@ def like(submission_id):
         conn.close()
         return jsonify({"error": "Already liked"}), 400
 
-    # Insert like
     cur.execute("""
         INSERT INTO likes (submission_id, ip_address)
         VALUES (%s, %s)
     """, (submission_id, ip))
 
-    # Increment likes count
     cur.execute("""
         UPDATE submissions SET likes = likes + 1
         WHERE id = %s
@@ -181,7 +177,6 @@ def like(submission_id):
 
     conn.commit()
 
-    # Get updated likes count
     cur.execute("SELECT likes FROM submissions WHERE id = %s", (submission_id,))
     updated = cur.fetchone()
 
@@ -195,12 +190,12 @@ def like(submission_id):
 def explain():
     data = request.get_json()
     code = data.get("code", "")
-    format = data.get("format", "code")
+    fmt = data.get("format", "code")
 
     if not code:
         return jsonify({"error": "No code provided"}), 400
 
-    explanation = explain_concept(code, format)
+    explanation = explain_concept(code, fmt)
     return jsonify({"explanation": explanation})
 
 
@@ -274,7 +269,6 @@ def subscribe():
     conn = get_conn()
     cur = conn.cursor()
 
-    import json
     cur.execute("""
         INSERT INTO push_subscriptions (subscription_info)
         VALUES (%s)
