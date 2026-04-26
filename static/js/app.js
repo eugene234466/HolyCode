@@ -17,17 +17,30 @@ if (formatSelect && languageGroup) {
     });
 }
 
-// ─── LIKE SUBMISSION ───
+// ─── LIKE / UNLIKE TOGGLE ───
 async function likeSubmission(id) {
     try {
         const res = await fetch(`/like/${id}`, { method: 'POST' });
         const data = await res.json();
 
         if (data.success) {
+            // Update like count on all matching buttons
             document.querySelectorAll(`.like-btn[data-id="${id}"] .like-count`)
                 .forEach(el => el.textContent = data.likes);
-        } else if (data.error) {
-            showToast(data.error === 'Already liked' ? 'You already liked this! ♥' : data.error);
+
+            // Toggle button style
+            document.querySelectorAll(`.like-btn[data-id="${id}"]`)
+                .forEach(btn => {
+                    if (data.action === 'liked') {
+                        btn.style.color = '#c0392b';
+                        btn.style.borderColor = '#c0392b';
+                        btn.style.background = 'rgba(192,57,43,0.08)';
+                    } else {
+                        btn.style.color = '';
+                        btn.style.borderColor = '';
+                        btn.style.background = '';
+                    }
+                });
         }
     } catch (err) {
         console.error('Like error:', err);
@@ -71,7 +84,6 @@ function closeModal() {
     document.body.style.overflow = '';
 }
 
-// Close modal on Escape key
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeModal();
 });
@@ -114,7 +126,7 @@ if (notifyBtn) {
 
             notifyBtn.textContent = '✓ Subscribed';
             notifyBtn.style.color = 'var(--green)';
-            showToast('You\'ll be notified daily! 🔔');
+            showToast("You'll be notified daily! 🔔");
         } catch (err) {
             console.error('Subscription error:', err);
             showToast('Could not subscribe. Try again.');
@@ -139,6 +151,7 @@ function showToast(message) {
         border-radius: 8px;
         z-index: 9999;
         animation: fadeUp 0.3s ease;
+        white-space: nowrap;
     `;
     toast.textContent = message;
     document.body.appendChild(toast);
