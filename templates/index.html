@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}HolyCode — Today's Scripture{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<section class="hero">
+    <div class="hero-date">{{ now.strftime('%B %d, %Y') if now else '' }}</div>
+    <h1 class="hero-title">Scripture<br><em>as Code</em></h1>
+    <p class="hero-sub">Daily devotionals and challenges for developers of faith</p>
+</section>
+
+<!-- Daily Devotional -->
+<section class="section devotional-section">
+    <div class="section-label">✦ Daily Devotional</div>
+    {% if devotional %}
+    <div class="devotional-card">
+        <div class="devotional-meta">
+            <span class="verse-ref">{{ devotional[1] }}</span>
+            <span class="language-tag">{{ devotional[3] }}</span>
+        </div>
+        <p class="verse-text">"{{ devotional[2] }}"</p>
+        <div class="code-block">
+            <div class="code-header">
+                <span class="code-dots">
+                    <span></span><span></span><span></span>
+                </span>
+                <span class="code-lang">{{ devotional[3] }}</span>
+            </div>
+            <pre><code>{{ devotional[4] }}</code></pre>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>Today's devotional is being generated... 🙏</p>
+    </div>
+    {% endif %}
+</section>
+
+<!-- Daily Challenge -->
+<section class="section challenge-section">
+    <div class="section-label">⚡ Daily Challenge</div>
+    {% if challenge %}
+    <div class="challenge-card">
+        <div class="challenge-verse">
+            <span class="verse-ref">{{ challenge[1] }}</span>
+            <p class="verse-text">"{{ challenge[2] }}"</p>
+        </div>
+        <div class="challenge-prompt">
+            <p>{{ challenge[3] }}</p>
+        </div>
+
+        <!-- Submission Form -->
+        <div class="submit-section">
+            <h3>Your Interpretation</h3>
+            <form action="/submit" method="POST" class="submit-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Username (optional)</label>
+                        <input type="text" name="username" placeholder="Anonymous">
+                    </div>
+                    <div class="form-group">
+                        <label>Format</label>
+                        <select name="format" id="formatSelect">
+                            <option value="code">Code</option>
+                            <option value="pseudocode">Pseudocode</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="languageGroup">
+                        <label>Language</label>
+                        <select name="language">
+                            <option value="python">Python</option>
+                            <option value="javascript">JavaScript</option>
+                            <option value="php">PHP</option>
+                            <option value="java">Java</option>
+                            <option value="c++">C++</option>
+                            <option value="rust">Rust</option>
+                            <option value="go">Go</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Your Code / Pseudocode</label>
+                    <textarea name="code" rows="10" placeholder="Write your interpretation here..."></textarea>
+                </div>
+                <button type="submit" class="btn-submit">Submit Interpretation →</button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>Today's challenge is being generated... ⚡</p>
+    </div>
+    {% endif %}
+</section>
+
+<!-- Community Feed -->
+<section class="section feed-section">
+    <div class="section-label">🔥 Community Feed</div>
+    {% if submissions %}
+    <div class="submissions-grid">
+        {% for sub in submissions %}
+        <div class="submission-card">
+            <div class="submission-header">
+                <span class="submission-user">{{ sub[2] }}</span>
+                <span class="submission-format {{ sub[3] }}">{{ sub[3] }}</span>
+                {% if sub[4] %}<span class="submission-lang">{{ sub[4] }}</span>{% endif %}
+            </div>
+            <pre class="submission-code"><code>{{ sub[5][:300] }}{% if sub[5]|length > 300 %}...{% endif %}</code></pre>
+            <div class="submission-footer">
+                <button class="like-btn" data-id="{{ sub[0] }}" onclick="likeSubmission({{ sub[0] }})">
+                    ♥ <span class="like-count">{{ sub[6] }}</span>
+                </button>
+                <div class="submission-actions">
+                    <a href="/submission/{{ sub[0] }}" class="btn-view">View Full →</a>
+                    <button class="btn-learn" onclick="learnConcept('{{ sub[5]|replace("'", "\\'") }}', '{{ sub[3] }}')">
+                        💡 Learn Concept
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No submissions yet. Be the first! 👆</p>
+    </div>
+    {% endif %}
+</section>
+
+<!-- Learn Concept Modal -->
+<div class="modal" id="learnModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <div class="modal-header">💡 Learn This Concept</div>
+        <div class="modal-body" id="modalBody">
+            <div class="loading">Asking Groq... 🤔</div>
+        </div>
+    </div>
+</div>
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal()"></div>
+
+{% endblock %}

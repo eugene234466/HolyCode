@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}HolyCode — {{ submission[2] }}'s Submission{% endblock %}
+
+{% block content %}
+
+<section class="hero hero-small">
+    <div class="section-label">📝 Submission</div>
+    <h1 class="hero-title">{{ submission[2] }}<br><em>Interprets</em></h1>
+    {% if challenge %}
+    <p class="hero-sub">{{ challenge[1] }}</p>
+    {% endif %}
+</section>
+
+<section class="section">
+    <div class="submission-full">
+
+        <div class="submission-meta-row">
+            <span class="submission-user">{{ submission[2] }}</span>
+            <span class="submission-format {{ submission[3] }}">{{ submission[3] }}</span>
+            {% if submission[4] %}<span class="submission-lang">{{ submission[4] }}</span>{% endif %}
+            <span class="submission-date">{{ submission[7].strftime('%b %d, %Y') if submission[7] else '' }}</span>
+        </div>
+
+        {% if challenge %}
+        <div class="challenge-ref-box">
+            <span class="verse-ref">{{ challenge[1] }}</span>
+            <p class="verse-text">"{{ challenge[2] }}"</p>
+        </div>
+        {% endif %}
+
+        <div class="code-block">
+            <div class="code-header">
+                <span class="code-dots"><span></span><span></span><span></span></span>
+                <span class="code-lang">{{ submission[4] if submission[4] else submission[3] }}</span>
+            </div>
+            <pre><code>{{ submission[5] }}</code></pre>
+        </div>
+
+        <div class="submission-actions-full">
+            <button class="like-btn like-btn-lg" data-id="{{ submission[0] }}" onclick="likeSubmission({{ submission[0] }})">
+                ♥ <span class="like-count">{{ submission[6] }}</span> Likes
+            </button>
+            <button class="btn-learn btn-learn-lg" onclick="learnConcept('{{ submission[5]|replace("'", "\\'") }}', '{{ submission[3] }}')">
+                💡 Learn This Concept
+            </button>
+            <a href="/card/{{ submission[0] }}" class="btn-card" target="_blank">
+                🖼 Download Code Card
+            </a>
+            <a href="/ai-image/{{ submission[0] }}" class="btn-ai" target="_blank">
+                🎨 Generate AI Image
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Learn Concept Modal -->
+<div class="modal" id="learnModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <div class="modal-header">💡 Learn This Concept</div>
+        <div class="modal-body" id="modalBody">
+            <div class="loading">Asking Groq... 🤔</div>
+        </div>
+    </div>
+</div>
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal()"></div>
+
+{% endblock %}
