@@ -50,11 +50,11 @@ VERSE: {verse_reference} - {verse_text}"""
 
 def generate_challenge():
     prompt = """You are HolyCode. Pick a random Bible verse that would make an interesting programming challenge.
-Then write a short, fun and inspiring challenge prompt telling developers to interpret it as code or pseudocode.
-Return ONLY in this exact format:
-REFERENCE: <book chapter:verse>
-TEXT: <verse text>
-PROMPT: <challenge prompt>"""
+    Then write a short, fun and inspiring challenge prompt telling developers to interpret it as code or pseudocode.
+    Return ONLY in this exact format:
+    REFERENCE: <book chapter:verse>
+    TEXT: <verse text>
+    PROMPT: <challenge prompt>"""
 
     response = client.chat.completions.create(
         model=model,
@@ -80,6 +80,10 @@ PROMPT: <challenge prompt>"""
             prompt_lines.append(line.replace("PROMPT:", "").strip())
         elif prompt_started:
             prompt_lines.append(line)
+
+        # Clean markdown backticks from code
+    code = "\n".join(code_lines).strip()
+    code = code.replace("```python", "").replace("```javascript", "").replace("```", "").strip()
 
     return {
         "reference": reference,
