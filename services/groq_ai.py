@@ -4,14 +4,15 @@ from config import Config
 client = Groq(api_key=Config.GROQ_API_KEY)
 model = "llama-3.3-70b-versatile"
 
+
 def generate_devotional(verse_text, verse_reference):
     prompt = f"""You are HolyCode. Write a short code snippet that creatively represents this scripture as actual code.
 Pick any programming language you like.
-Return ONLY in this exact format:
+Return ONLY in this exact format with no extra text:
 REFERENCE: <book chapter:verse>
 LANGUAGE: <language name>
 CODE:
-<code snippet>
+<code snippet only, no markdown backticks>
 
 VERSE: {verse_reference} - {verse_text}"""
 
@@ -40,6 +41,8 @@ VERSE: {verse_reference} - {verse_text}"""
             code_lines.append(line)
 
     code = "\n".join(code_lines).strip()
+    # Strip any markdown backticks Groq might sneak in
+    code = code.replace("```python", "").replace("```javascript", "").replace("```php", "").replace("```java", "").replace("```", "").strip()
 
     return {
         "reference": reference,
@@ -50,11 +53,11 @@ VERSE: {verse_reference} - {verse_text}"""
 
 def generate_challenge():
     prompt = """You are HolyCode. Pick a random Bible verse that would make an interesting programming challenge.
-    Then write a short, fun and inspiring challenge prompt telling developers to interpret it as code or pseudocode.
-    Return ONLY in this exact format:
-    REFERENCE: <book chapter:verse>
-    TEXT: <verse text>
-    PROMPT: <challenge prompt>"""
+Then write a short, fun and inspiring challenge prompt telling developers to interpret it as code or pseudocode.
+Return ONLY in this exact format with no extra text:
+REFERENCE: <book chapter:verse>
+TEXT: <verse text>
+PROMPT: <challenge prompt>"""
 
     response = client.chat.completions.create(
         model=model,
@@ -80,10 +83,6 @@ def generate_challenge():
             prompt_lines.append(line.replace("PROMPT:", "").strip())
         elif prompt_started:
             prompt_lines.append(line)
-
-        # Clean markdown backticks from code
-    code = "\n".join(code_lines).strip()
-    code = code.replace("```python", "").replace("```javascript", "").replace("```", "").strip()
 
     return {
         "reference": reference,
