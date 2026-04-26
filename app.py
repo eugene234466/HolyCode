@@ -49,7 +49,6 @@ def index():
     """)
     challenge = cur.fetchone()
 
-    # Fetch submissions for ANY of today's challenges
     submissions = []
     if challenge:
         cur.execute("""
@@ -160,20 +159,18 @@ def like(submission_id):
         WHERE submission_id = %s AND ip_address = %s
     """, (submission_id, ip))
 
-    if cur.fetchone():
-        cur.close()
-        conn.close()
-        return jsonify({"error": "Already liked"}), 400
+    existing = cur.fetchone()
 
-    cur.execute("""
-        INSERT INTO likes (submission_id, ip_address)
-        VALUES (%s, %s)
-    """, (submission_id, ip))
-
-    cur.execute("""
-        UPDATE submissions SET likes = likes + 1
-        WHERE id = %s
-    """, (submission_id,))
+    if existing:
+        # Unlike
+        cur.execute("DELETE FROM likes WHERE submission_id = %s AND ip_address = %s", (submission_id, ip))
+        cur.execute("UPDATE submissions SET likes = GREATEST(likes - 1, 0) WHERE id = %s", (submission_id,))
+        action = "unliked"
+    else:
+        # Like
+        cur.execute("INSERT INTO likes (submission_id, ip_address) VALUES (%s, %s)", (submission_id, ip))
+        cur.execute("UPDATE submissions SET likes = likes + 1 WHERE id = %s", (submission_id,))
+        action = "liked"
 
     conn.commit()
 
@@ -183,7 +180,7 @@ def like(submission_id):
     cur.close()
     conn.close()
 
-    return jsonify({"success": True, "likes": updated[0]})
+    return jsonify({"success": True, "likes": updated[0], "action": action})
 
 
 @app.route("/explain", methods=["POST"])
