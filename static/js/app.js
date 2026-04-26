@@ -18,31 +18,59 @@ if (formatSelect && languageGroup) {
 }
 
 // ─── LIKE / UNLIKE TOGGLE ───
+const likedSet = new Set(); // track liked submissions in session
+
 async function likeSubmission(id) {
+    const buttons = document.querySelectorAll(`.like-btn[data-id="${id}"]`);
+
+    // Optimistic UI update
+    const isLiked = likedSet.has(id);
+    buttons.forEach(btn => {
+        const countEl = btn.querySelector('.like-count');
+        const current = parseInt(countEl.textContent) || 0;
+
+        if (isLiked) {
+            countEl.textContent = Math.max(0, current - 1);
+            btn.classList.remove('liked');
+            likedSet.delete(id);
+        } else {
+            countEl.textContent = current + 1;
+            btn.classList.add('liked');
+            likedSet.add(id);
+        }
+    });
+
     try {
         const res = await fetch(`/like/${id}`, { method: 'POST' });
         const data = await res.json();
 
         if (data.success) {
-            // Update like count on all matching buttons
-            document.querySelectorAll(`.like-btn[data-id="${id}"] .like-count`)
-                .forEach(el => el.textContent = data.likes);
-
-            // Toggle button style
-            document.querySelectorAll(`.like-btn[data-id="${id}"]`)
-                .forEach(btn => {
-                    if (data.action === 'liked') {
-                        btn.style.color = '#c0392b';
-                        btn.style.borderColor = '#c0392b';
-                        btn.style.background = 'rgba(192,57,43,0.08)';
-                    } else {
-                        btn.style.color = '';
-                        btn.style.borderColor = '';
-                        btn.style.background = '';
-                    }
-                });
+            // Sync with server count
+            buttons.forEach(btn => {
+                btn.querySelector('.like-count').textContent = data.likes;
+                if (data.action === 'liked') {
+                    btn.classList.add('liked');
+                    likedSet.add(id);
+                } else {
+                    btn.classList.remove('liked');
+                    likedSet.delete(id);
+                }
+            });
         }
     } catch (err) {
+        // Revert optimistic update on error
+        buttons.forEach(btn => {
+            const countEl = btn.querySelector('.like-count');
+            const current = parseInt(countEl.textContent) || 0;
+            countEl.textContent = isLiked ? current + 1 : Math.max(0, current - 1);
+            if (isLiked) {
+                btn.classList.add('liked');
+                likedSet.add(id);
+            } else {
+                btn.classList.remove('liked');
+                likedSet.delete(id);
+            }
+        });
         console.error('Like error:', err);
     }
 }
@@ -56,31 +84,43 @@ async function learnConcept(code, format) {
         const res = await fetch('/explain', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code, format })
+            body: JSON.stringify({ code: code, format: format })
         });
+
+        if (!res.ok) {
+            throw new Error(`HTTP error: ${res.status}`);
+        }
+
         const data = await res.json();
 
         if (data.explanation) {
             document.getElementById('modalBody').innerHTML = `
-                <p>${data.explanation.replace(/\n/g, '<br>')}</p>
+                <p style="line-height:1.8">${data.explanation.replace(/\n/g, '<br>')}</p>
             `;
+        } else if (data.error) {
+            document.getElementById('modalBody').innerHTML = `<p style="color:var(--text-muted)">${data.error}</p>`;
         } else {
-            document.getElementById('modalBody').innerHTML = '<p>Could not generate explanation. Try again!</p>';
+            document.getElementById('modalBody').innerHTML = '<p style="color:var(--text-muted)">Could not generate explanation. Try again!</p>';
         }
     } catch (err) {
-        document.getElementById('modalBody').innerHTML = '<p>Something went wrong. Try again!</p>';
+        console.error('Learn concept error:', err);
+        document.getElementById('modalBody').innerHTML = '<p style="color:var(--text-muted)">Something went wrong. Try again!</p>';
     }
 }
 
 function openModal() {
-    document.getElementById('learnModal').classList.add('open');
-    document.getElementById('modalOverlay').classList.add('open');
+    const modal = document.getElementById('learnModal');
+    const overlay = document.getElementById('modalOverlay');
+    if (modal) modal.classList.add('open');
+    if (overlay) overlay.classList.add('open');
     document.body.style.overflow = 'hidden';
 }
 
 function closeModal() {
-    document.getElementById('learnModal').classList.remove('open');
-    document.getElementById('modalOverlay').classList.remove('open');
+    const modal = document.getElementById('learnModal');
+    const overlay = document.getElementById('modalOverlay');
+    if (modal) modal.classList.remove('open');
+    if (overlay) overlay.classList.remove('open');
     document.body.style.overflow = '';
 }
 
@@ -136,7 +176,11 @@ if (notifyBtn) {
 
 // ─── TOAST ───
 function showToast(message) {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+
     const toast = document.createElement('div');
+    toast.className = 'toast';
     toast.style.cssText = `
         position: fixed;
         bottom: 2rem;
@@ -152,6 +196,7 @@ function showToast(message) {
         z-index: 9999;
         animation: fadeUp 0.3s ease;
         white-space: nowrap;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     `;
     toast.textContent = message;
     document.body.appendChild(toast);
