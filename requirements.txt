@@ -1,7 +1,9 @@
 flask
 groq
+psycopg2-binary
 requests
 pillow
 apscheduler
 pywebpush
 python-dotenv
+gunicorn
