@@ -114,7 +114,10 @@
                 </button>
                 <div class="submission-actions">
                     <a href="/submission/{{ sub[0] }}" class="btn-view">View Full →</a>
-                    <button class="btn-learn" onclick="learnConcept('{{ sub[5]|replace("'", "\\'") }}', '{{ sub[3] }}')">
+                    <button class="btn-learn"
+                        data-code="{{ sub[5]|e }}"
+                        data-format="{{ sub[3] }}"
+                        onclick="learnConceptFromBtn(this)">
                         💡 Learn Concept
                     </button>
                 </div>
