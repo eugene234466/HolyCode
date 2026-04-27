@@ -40,7 +40,10 @@
             <button class="like-btn like-btn-lg" data-id="{{ submission[0] }}" onclick="likeSubmission({{ submission[0] }})">
                 ♥ <span class="like-count">{{ submission[6] }}</span> Likes
             </button>
-            <button class="btn-learn btn-learn-lg" onclick="learnConcept('{{ submission[5]|replace("'", "\\'") }}', '{{ submission[3] }}')">
+            <button class="btn-learn btn-learn-lg"
+                data-code="{{ submission[5]|e }}"
+                data-format="{{ submission[3] }}"
+                onclick="learnConceptFromBtn(this)">
                 💡 Learn This Concept
             </button>
             <a href="/card/{{ submission[0] }}" class="btn-card" target="_blank">
