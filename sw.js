@@ -1,9 +1,8 @@
-const CACHE_NAME = 'holycode-v1';
+const CACHE_NAME = 'holycode-v2';
 const ASSETS = [
-    '/',
     '/static/css/style.css',
     '/static/js/app.js',
-    '/manifest.json'
+    '/static/manifest.json'
 ];
 
 // Install
@@ -14,7 +13,7 @@ self.addEventListener('install', event => {
     self.skipWaiting();
 });
 
-// Activate
+// Activate — delete old caches
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(keys =>
@@ -24,8 +23,26 @@ self.addEventListener('activate', event => {
     self.clients.claim();
 });
 
-// Fetch
+// Fetch — never cache dynamic routes
 self.addEventListener('fetch', event => {
+    const url = event.request.url;
+
+    // Always fetch fresh for dynamic routes
+    if (url.includes('/submit') ||
+        url.includes('/like') ||
+        url.includes('/explain') ||
+        url.includes('/subscribe') ||
+        url.includes('/submission') ||
+        url.includes('/archive') ||
+        url.includes('/card') ||
+        url.includes('/ai-image') ||
+        url.endsWith('/') ||
+        url.endsWith('/holycode.onrender.com')) {
+        event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+        return;
+    }
+
+    // Cache static assets only
     event.respondWith(
         caches.match(event.request).then(cached => cached || fetch(event.request))
     );
