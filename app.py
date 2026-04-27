@@ -162,12 +162,10 @@ def like(submission_id):
     existing = cur.fetchone()
 
     if existing:
-        # Unlike
         cur.execute("DELETE FROM likes WHERE submission_id = %s AND ip_address = %s", (submission_id, ip))
         cur.execute("UPDATE submissions SET likes = GREATEST(likes - 1, 0) WHERE id = %s", (submission_id,))
         action = "unliked"
     else:
-        # Like
         cur.execute("INSERT INTO likes (submission_id, ip_address) VALUES (%s, %s)", (submission_id, ip))
         cur.execute("UPDATE submissions SET likes = likes + 1 WHERE id = %s", (submission_id,))
         action = "liked"
@@ -186,7 +184,10 @@ def like(submission_id):
 @app.route("/explain", methods=["POST"])
 def explain():
     data = request.get_json()
-    code = data.get("code", "")
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    code = data.get("code", "").strip()
     fmt = data.get("format", "code")
 
     if not code:
@@ -276,6 +277,11 @@ def subscribe():
     conn.close()
 
     return jsonify({"success": True})
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return send_file("static/images/icon-192.png", mimetype="image/png")
 
 
 @app.route("/manifest.json")
