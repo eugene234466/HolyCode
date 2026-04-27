@@ -18,64 +18,57 @@ if (formatSelect && languageGroup) {
 }
 
 // ─── LIKE / UNLIKE TOGGLE ───
-const likedSet = new Set(); // track liked submissions in session
+const likedSet = new Set();
 
 async function likeSubmission(id) {
     const buttons = document.querySelectorAll(`.like-btn[data-id="${id}"]`);
-
-    // Optimistic UI update
     const isLiked = likedSet.has(id);
+
+    // Optimistic update
     buttons.forEach(btn => {
         const countEl = btn.querySelector('.like-count');
         const current = parseInt(countEl.textContent) || 0;
-
-        if (isLiked) {
-            countEl.textContent = Math.max(0, current - 1);
-            btn.classList.remove('liked');
-            likedSet.delete(id);
-        } else {
-            countEl.textContent = current + 1;
-            btn.classList.add('liked');
-            likedSet.add(id);
-        }
+        countEl.textContent = isLiked ? Math.max(0, current - 1) : current + 1;
+        btn.classList.toggle('liked', !isLiked);
     });
+
+    if (isLiked) likedSet.delete(id);
+    else likedSet.add(id);
 
     try {
         const res = await fetch(`/like/${id}`, { method: 'POST' });
         const data = await res.json();
 
         if (data.success) {
-            // Sync with server count
+            // Sync with real server count
             buttons.forEach(btn => {
                 btn.querySelector('.like-count').textContent = data.likes;
-                if (data.action === 'liked') {
-                    btn.classList.add('liked');
-                    likedSet.add(id);
-                } else {
-                    btn.classList.remove('liked');
-                    likedSet.delete(id);
-                }
+                btn.classList.toggle('liked', data.action === 'liked');
             });
+            if (data.action === 'liked') likedSet.add(id);
+            else likedSet.delete(id);
         }
     } catch (err) {
-        // Revert optimistic update on error
+        // Revert on error
         buttons.forEach(btn => {
             const countEl = btn.querySelector('.like-count');
             const current = parseInt(countEl.textContent) || 0;
             countEl.textContent = isLiked ? current + 1 : Math.max(0, current - 1);
-            if (isLiked) {
-                btn.classList.add('liked');
-                likedSet.add(id);
-            } else {
-                btn.classList.remove('liked');
-                likedSet.delete(id);
-            }
+            btn.classList.toggle('liked', isLiked);
         });
+        if (isLiked) likedSet.add(id);
+        else likedSet.delete(id);
         console.error('Like error:', err);
     }
 }
 
-// ─── LEARN CONCEPT MODAL ───
+// ─── LEARN CONCEPT — from data attribute (safe, no inline code) ───
+function learnConceptFromBtn(btn) {
+    const code = btn.getAttribute('data-code');
+    const format = btn.getAttribute('data-format');
+    learnConcept(code, format);
+}
+
 async function learnConcept(code, format) {
     openModal();
     document.getElementById('modalBody').innerHTML = '<div class="loading">Asking Groq... 🤔</div>';
@@ -87,40 +80,34 @@ async function learnConcept(code, format) {
             body: JSON.stringify({ code: code, format: format })
         });
 
-        if (!res.ok) {
-            throw new Error(`HTTP error: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
 
         if (data.explanation) {
             document.getElementById('modalBody').innerHTML = `
-                <p style="line-height:1.8">${data.explanation.replace(/\n/g, '<br>')}</p>
+                <p style="line-height:1.85;font-size:1rem">${data.explanation.replace(/\n/g, '<br>')}</p>
             `;
-        } else if (data.error) {
-            document.getElementById('modalBody').innerHTML = `<p style="color:var(--text-muted)">${data.error}</p>`;
         } else {
-            document.getElementById('modalBody').innerHTML = '<p style="color:var(--text-muted)">Could not generate explanation. Try again!</p>';
+            document.getElementById('modalBody').innerHTML =
+                '<p style="color:var(--text-muted);font-style:italic">Could not generate explanation. Try again!</p>';
         }
     } catch (err) {
         console.error('Learn concept error:', err);
-        document.getElementById('modalBody').innerHTML = '<p style="color:var(--text-muted)">Something went wrong. Try again!</p>';
+        document.getElementById('modalBody').innerHTML =
+            '<p style="color:var(--text-muted);font-style:italic">Something went wrong. Try again!</p>';
     }
 }
 
 function openModal() {
-    const modal = document.getElementById('learnModal');
-    const overlay = document.getElementById('modalOverlay');
-    if (modal) modal.classList.add('open');
-    if (overlay) overlay.classList.add('open');
+    document.getElementById('learnModal')?.classList.add('open');
+    document.getElementById('modalOverlay')?.classList.add('open');
     document.body.style.overflow = 'hidden';
 }
 
 function closeModal() {
-    const modal = document.getElementById('learnModal');
-    const overlay = document.getElementById('modalOverlay');
-    if (modal) modal.classList.remove('open');
-    if (overlay) overlay.classList.remove('open');
+    document.getElementById('learnModal')?.classList.remove('open');
+    document.getElementById('modalOverlay')?.classList.remove('open');
     document.body.style.overflow = '';
 }
 
@@ -176,27 +163,23 @@ if (notifyBtn) {
 
 // ─── TOAST ───
 function showToast(message) {
-    const existing = document.querySelector('.toast');
-    if (existing) existing.remove();
-
+    document.querySelector('.toast')?.remove();
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.style.cssText = `
-        position: fixed;
-        bottom: 2rem;
-        left: 50%;
-        transform: translateX(-50%);
-        background: var(--bg-elevated);
-        border: 1px solid var(--border-light);
-        color: var(--text);
-        font-family: 'Fira Code', monospace;
-        font-size: 0.8rem;
-        padding: 10px 20px;
-        border-radius: 8px;
-        z-index: 9999;
-        animation: fadeUp 0.3s ease;
-        white-space: nowrap;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        position:fixed; bottom:2rem; left:50%;
+        transform:translateX(-50%);
+        background:var(--bg-elevated);
+        border:1px solid var(--border-light);
+        color:var(--text);
+        font-family:'Fira Code',monospace;
+        font-size:0.8rem;
+        padding:10px 20px;
+        border-radius:8px;
+        z-index:9999;
+        animation:fadeUp 0.3s ease;
+        white-space:nowrap;
+        box-shadow:0 4px 20px rgba(0,0,0,0.4);
     `;
     toast.textContent = message;
     document.body.appendChild(toast);
