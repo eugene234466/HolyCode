@@ -1,3 +1,4 @@
+import re
 from groq import Groq
 from config import Config
 
@@ -5,14 +6,21 @@ client = Groq(api_key=Config.GROQ_API_KEY)
 model = "llama-3.3-70b-versatile"
 
 
+def clean_code(text):
+    """Strip markdown backticks and language tags from code"""
+    text = re.sub(r'```[\w]*\n?', '', text)
+    text = text.replace('```', '')
+    return text.strip()
+
+
 def generate_devotional(verse_text, verse_reference):
     prompt = f"""You are HolyCode. Write a short code snippet that creatively represents this scripture as actual code.
 Pick any programming language you like.
-Return ONLY in this exact format with no extra text:
+Return ONLY in this exact format with no extra text and no markdown backticks:
 REFERENCE: <book chapter:verse>
 LANGUAGE: <language name>
 CODE:
-<code snippet only, no markdown backticks>
+<code snippet only, no markdown, no backticks>
 
 VERSE: {verse_reference} - {verse_text}"""
 
@@ -40,9 +48,7 @@ VERSE: {verse_reference} - {verse_text}"""
         elif code_started:
             code_lines.append(line)
 
-    code = "\n".join(code_lines).strip()
-    # Strip any markdown backticks Groq might sneak in
-    code = code.replace("```python", "").replace("```javascript", "").replace("```php", "").replace("```java", "").replace("```", "").strip()
+    code = clean_code("\n".join(code_lines))
 
     return {
         "reference": reference,
