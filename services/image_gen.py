@@ -10,14 +10,15 @@ AI_DIR = os.path.join("static", "images", "ai")
 os.makedirs(CARDS_DIR, exist_ok=True)
 os.makedirs(AI_DIR, exist_ok=True)
 
+
 def generate_code_card(code, language, reference):
     # Canvas
     width, height = 800, 500
     bg_color = (13, 15, 20)        # #0d0f14
-    gold = (240, 165, 0)           # #f0a500
-    white = (238, 240, 246)        # #eef0f6
-    muted = (136, 144, 168)        # #8890a8
-    bar_color = (26, 30, 42)       # #1a1e2a
+    gold = (201, 168, 76)          # #c9a84c
+    white = (232, 230, 224)        # #e8e6e0
+    muted = (107, 104, 120)        # #6b6878
+    bar_color = (21, 21, 32)       # #151520
 
     img = Image.new("RGB", (width, height), bg_color)
     draw = ImageDraw.Draw(img)
@@ -35,25 +36,30 @@ def generate_code_card(code, language, reference):
     # Top bar
     draw.rectangle([0, 0, width, 50], fill=bar_color)
 
-    # Gold accent line
+    # Gold accent line at top
     draw.rectangle([0, 0, width, 3], fill=gold)
 
+    # Traffic light dots
+    draw.ellipse([16, 18, 28, 30], fill=(255, 95, 87))
+    draw.ellipse([36, 18, 48, 30], fill=(254, 188, 46))
+    draw.ellipse([56, 18, 68, 30], fill=(40, 200, 64))
+
     # Language label
-    draw.text((20, 15), f"// {language}", font=font_title, fill=gold)
+    draw.text((90, 16), f"// {language}", font=font_title, fill=gold)
 
     # Reference on top right
     ref_bbox = draw.textbbox((0, 0), reference, font=font_label)
     ref_width = ref_bbox[2] - ref_bbox[0]
     draw.text((width - ref_width - 20, 18), reference, font=font_label, fill=muted)
 
-    # HolyCode watermark bottom right
-    watermark = "HolyCode"
-    wm_bbox = draw.textbbox((0, 0), watermark, font=font_label)
-    wm_width = wm_bbox[2] - wm_bbox[0]
-    draw.text((width - wm_width - 20, height - 30), watermark, font=font_label, fill=gold)
+    # Gold accent line at bottom
+    draw.rectangle([0, height - 3, width, height], fill=gold)
+
+    # HolyCode watermark bottom left
+    draw.text((20, height - 26), "✦ HolyCode", font=font_label, fill=gold)
 
     # Code lines
-    x, y = 20, 70
+    x, y = 20, 68
     line_height = 22
     max_lines = int((height - 100) / line_height)
 
@@ -73,12 +79,18 @@ def generate_code_card(code, language, reference):
 
 
 def generate_ai_image(verse_text, reference):
-    prompt = f"Biblical scene representing: {verse_text}. Digital art, cinematic lighting, dramatic, detailed, ultra HD"
+    prompt = (
+        f"A dramatic cinematic digital painting inspired by the Bible verse {reference}: '{verse_text}'. "
+        f"Ancient biblical setting, sweeping landscape, divine golden light rays breaking through clouds, "
+        f"deep symbolic imagery, rich warm colors, oil painting style, highly detailed brushwork, "
+        f"epic grand composition, spiritual atmosphere, sacred mood, "
+        f"no text, no letters, no words, no captions"
+    )
     encoded_prompt = quote(prompt)
-    url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=800&height=500&nologo=true"
+    url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=800&height=500&nologo=true&seed=42"
 
     try:
-        response = requests.get(url, timeout=30)
+        response = requests.get(url, timeout=60)
         if response.status_code == 200:
             filename = f"ai_{reference.replace(' ', '_').replace(':', '-')}.png"
             filepath = os.path.join(AI_DIR, filename)
