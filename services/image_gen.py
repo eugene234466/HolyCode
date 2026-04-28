@@ -83,10 +83,8 @@ def generate_ai_image(verse_text, reference):
         f"A dramatic cinematic digital painting inspired by the Bible verse {reference}: '{verse_text}'. "
         f"Ancient biblical setting, sweeping landscape, divine golden light rays breaking through clouds, "
         f"deep symbolic imagery, rich warm colors, oil painting style, highly detailed brushwork, "
-        f"epic grand composition, spiritual atmosphere, sacred mood, "
-        f"The Bible verse should be written on the image.
-{reference}
-{verse_text}"
+        f"epic grand composition, spiritual atmosphere, sacred mood. "
+        f"The Bible verse should be written on the image: {reference} {verse_text}"
     )
     encoded_prompt = quote(prompt)
     url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=800&height=500&nologo=true&seed=42"
