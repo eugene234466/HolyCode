@@ -60,6 +60,8 @@ VERSE: {verse_reference} - {verse_text}"""
 def generate_challenge():
     prompt = """You are HolyCode. Pick a random Bible verse that would make an interesting programming challenge.
 Then write a short, fun and inspiring challenge prompt telling developers to interpret it as code or pseudocode.
+The Bible is all yours so explore. Also don't limit to classes, objects and OOPs. Let the challenge have the right difficulty
+even for non-developers.
 Return ONLY in this exact format with no extra text:
 REFERENCE: <book chapter:verse>
 TEXT: <verse text>
