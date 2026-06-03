@@ -14,9 +14,10 @@ def clean_code(text):
 
 
 def generate_devotional(verse_text, verse_reference):
-    prompt = f"""You are HolyCode. Write a short code snippet that creatively represents this scripture as actual code.
-Pick any programming language you like.
-Return ONLY in this exact format with no extra text and no markdown backticks:
+    prompt = f"""You are HolyCode. Write a short, creative code snippet that represents this Bible verse as actual working code.
+Pick any programming language you like. Be creative and make it meaningful.
+Return ONLY in this exact format with no extra text and absolutely no markdown backticks:
+
 REFERENCE: <book chapter:verse>
 LANGUAGE: <language name>
 CODE:
@@ -27,7 +28,7 @@ VERSE: {verse_reference} - {verse_text}"""
     response = client.chat.completions.create(
         model=model,
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.7
+        temperature=0.8
     )
 
     text = response.choices[0].message.content.strip()
@@ -57,20 +58,30 @@ VERSE: {verse_reference} - {verse_text}"""
     }
 
 
-def generate_challenge():
-    prompt = """You are HolyCode. Pick a random Bible verse that would make an interesting programming challenge.
-Then write a short, fun and inspiring challenge prompt telling developers to interpret it as code or pseudocode.
-The Bible is all yours so explore. Also don't limit to classes, objects and OOPs. Let the challenge have the right difficulty
-even for non-developers.
+def generate_challenge(used_verses=None):
+    """Generate a daily challenge with a verse not previously used"""
+    if used_verses is None:
+        used_verses = []
+
+    exclude_text = ""
+    if used_verses:
+        exclude_list = ", ".join(used_verses[:20])
+        exclude_text = f"\n\nIMPORTANT: Do NOT use any of these verses that have already been used: {exclude_list}\nPick a completely different verse from a different book of the Bible."
+
+    prompt = f"""You are HolyCode. Pick a unique and interesting Bible verse that would make a great programming challenge.
+Choose from a wide variety of books — Old Testament, New Testament, Psalms, Proverbs, Gospels, Epistles.
+Write a short, fun and inspiring challenge prompt telling developers to interpret the verse as code or pseudocode.
+Be creative with the challenge — suggest metaphors, algorithms, or programming concepts that could represent the verse.{exclude_text}
+
 Return ONLY in this exact format with no extra text:
 REFERENCE: <book chapter:verse>
 TEXT: <verse text>
-PROMPT: <challenge prompt>"""
+PROMPT: <challenge prompt, 2-3 sentences max>"""
 
     response = client.chat.completions.create(
         model=model,
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.9
+        temperature=1.0
     )
 
     text = response.choices[0].message.content.strip()
