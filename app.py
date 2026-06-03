@@ -2,33 +2,68 @@ import os
 import json
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template, redirect, url_for, send_file
-from services.scheduler import start_scheduler, generate_daily_devotional, generate_daily_challenge
 from services.groq_ai import explain_concept
 from services.image_gen import generate_code_card, generate_ai_image
-from database.db import get_conn, init_db
+from services.notifications import notify_winner
+from database.db import get_conn, init_db, delete_subscription
 
 app = Flask(__name__)
 
 # ─── STARTUP ───
 with app.app_context():
     init_db()
-    conn = get_conn()
-    cur = conn.cursor()
 
-    cur.execute("SELECT id FROM daily_devotional WHERE DATE(created_at) = CURRENT_DATE")
-    if not cur.fetchone():
-        generate_daily_devotional()
+    # Only use APScheduler on Render (not Vercel serverless)
+    if os.environ.get("VERCEL") != "1":
+        from services.scheduler import start_scheduler, generate_daily_devotional, generate_daily_challenge
 
-    cur.execute("SELECT id FROM daily_challenge WHERE DATE(created_at) = CURRENT_DATE")
-    if not cur.fetchone():
-        generate_daily_challenge()
+        conn = get_conn()
+        cur = conn.cursor()
 
-    cur.close()
-    conn.close()
-    start_scheduler()
+        cur.execute("SELECT id FROM daily_devotional WHERE DATE(created_at) = CURRENT_DATE")
+        if not cur.fetchone():
+            generate_daily_devotional()
+
+        cur.execute("SELECT id FROM daily_challenge WHERE DATE(created_at) = CURRENT_DATE")
+        if not cur.fetchone():
+            generate_daily_challenge()
+
+        cur.close()
+        conn.close()
+        start_scheduler()
+    else:
+        print("✅ Running on Vercel — using cron endpoints instead of APScheduler")
 
 
-# ─── ROUTES ───
+# ─── VERCEL CRON ENDPOINTS ───
+
+def verify_cron_secret():
+    """Verify request comes from Vercel cron"""
+    secret = request.headers.get("Authorization", "").replace("Bearer ", "")
+    return secret == os.environ.get("CRON_SECRET", "")
+
+
+@app.route("/cron/devotional")
+def cron_devotional():
+    if not verify_cron_secret():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    from services.scheduler import generate_daily_devotional
+    success = generate_daily_devotional()
+    return jsonify({"success": success})
+
+
+@app.route("/cron/challenge")
+def cron_challenge():
+    if not verify_cron_secret():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    from services.scheduler import generate_daily_challenge
+    success = generate_daily_challenge()
+    return jsonify({"success": success})
+
+
+# ─── MAIN ROUTES ───
 
 @app.route("/")
 def index():
@@ -270,13 +305,55 @@ def subscribe():
     cur.execute("""
         INSERT INTO push_subscriptions (subscription_info)
         VALUES (%s)
+        RETURNING id
     """, (json.dumps(subscription_info),))
 
+    sub_id = cur.fetchone()[0]
     conn.commit()
     cur.close()
     conn.close()
 
+    return jsonify({"success": True, "id": sub_id})
+
+
+@app.route("/unsubscribe", methods=["POST"])
+def unsubscribe():
+    data = request.get_json()
+    sub_id = data.get("id")
+
+    if not sub_id:
+        return jsonify({"error": "No subscription ID"}), 400
+
+    delete_subscription(sub_id)
     return jsonify({"success": True})
+
+
+@app.route("/notify/winner/<int:submission_id>", methods=["POST"])
+def notify_winner_route(submission_id):
+    """Manually trigger winner notification — admin only"""
+    secret = request.headers.get("Authorization", "").replace("Bearer ", "")
+    if secret != os.environ.get("CRON_SECRET", ""):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT username FROM submissions WHERE id = %s", (submission_id,))
+    sub = cur.fetchone()
+
+    cur.execute("""
+        SELECT c.verse_reference FROM daily_challenge c
+        JOIN submissions s ON s.challenge_id = c.id
+        WHERE s.id = %s
+    """, (submission_id,))
+    challenge = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    if not sub:
+        return jsonify({"error": "Submission not found"}), 404
+
+    result = notify_winner(sub[0], challenge[0] if challenge else "today's verse")
+    return jsonify(result)
 
 
 @app.route("/favicon.ico")
