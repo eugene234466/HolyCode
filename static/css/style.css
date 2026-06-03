@@ -599,6 +599,7 @@ footer p { font-family: 'Cinzel', serif; font-size: 0.85rem; color: var(--gold-d
 }
 
 /* ─── LIKED STATE ─── */
+/* ─── LIKED STATE ─── */
 .like-btn.liked {
     color: #c0392b !important;
     border-color: #c0392b !important;
@@ -609,6 +610,11 @@ footer p { font-family: 'Cinzel', serif; font-size: 0.85rem; color: var(--gold-d
     transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.1s;
 }
 
-.like-btn:active {
-    transform: scale(0.95);
+.like-btn:active { transform: scale(0.95); }
+
+/* ─── SUBSCRIBED NOTIFY BUTTON ─── */
+.notify-btn.subscribed {
+    border-color: var(--gold-dim);
+    color: var(--gold);
+    background: var(--gold-glow);
 }
