@@ -4,8 +4,8 @@ from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 from urllib.parse import quote
 
-CARDS_DIR = os.path.join("static", "images", "cards")
-AI_DIR = os.path.join("static", "images", "ai")
+CARDS_DIR = os.path.join("tmp", "images", "cards")
+AI_DIR = os.path.join("tmp", "images", "ai")
 
 os.makedirs(CARDS_DIR, exist_ok=True)
 os.makedirs(AI_DIR, exist_ok=True)
