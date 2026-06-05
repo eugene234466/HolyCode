@@ -1,25 +1,25 @@
 {
-    "version": 2,
-    "builds": [
-        {
-            "src": "app.py",
-            "use": "@vercel/python"
-        }
-    ],
-    "routes": [
-        {
-            "src": "/(.*)",
-            "dest": "app.py"
-        }
-    ],
-    "crons": [
-        {
-            "path": "/cron/devotional",
-            "schedule": "0 0 * * *"
-        },
-        {
-            "path": "/cron/challenge",
-            "schedule": "1 0 * * *"
-        }
-    ],
-   
+  "version": 2,
+  "builds": [
+    {
+      "src": "app.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "app.py"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/cron/devotional",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/cron/challenge",
+      "schedule": "1 0 * * *"
+    }
+  ]
+}
