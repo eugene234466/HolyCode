@@ -287,7 +287,7 @@ def ai_image(submission_id):
     if not filename:
         return jsonify({"error": "Image generation failed"}), 500
 
-    filepath = os.path.join("static", "images", "ai", filename)
+    filepath = os.path.join("/tmp", "images", "ai", filename)
     return send_file(filepath, mimetype="image/png")
 
 
