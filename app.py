@@ -1,5 +1,6 @@
 import os
 import json
+import uuid
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template, redirect, url_for, send_file
 from services.groq_ai import explain_concept
@@ -255,10 +256,15 @@ def card(submission_id):
     reference = challenge[1] if challenge else "HolyCode"
     code = sub[5]
 
-    filename = generate_code_card(code, language, reference)
-    filepath = os.path.join("static", "images", "cards", filename)
-
-    return send_file(filepath, mimetype="image/png")
+    # generate_code_card returns a BytesIO object
+    image_buffer = generate_code_card(code, language, reference)
+    
+    # Serve directly from memory
+    return send_file(
+        image_buffer,
+        mimetype="image/png",
+        as_attachment=False
+    )
 
 
 @app.route("/ai-image/<int:submission_id>")
@@ -283,12 +289,18 @@ def ai_image(submission_id):
     verse_text = challenge[2] if challenge else ""
     reference = challenge[1] if challenge else "HolyCode"
 
-    filename = generate_ai_image(verse_text, reference)
-    if not filename:
+    # generate_ai_image returns a BytesIO object
+    image_buffer = generate_ai_image(verse_text, reference)
+    
+    if image_buffer is None:
         return jsonify({"error": "Image generation failed"}), 500
 
-    filepath = os.path.join("/tmp", "images", "ai", filename)
-    return send_file(filepath, mimetype="image/png")
+    # Serve directly from memory
+    return send_file(
+        image_buffer,
+        mimetype="image/png",
+        as_attachment=False
+    )
 
 
 @app.route("/subscribe", methods=["POST"])
