@@ -8,7 +8,7 @@ HolyCode is a community platform where Bible verses are interpreted as actual co
 
 ## 🌐 Live Demo
 
-[holycode.onrender.com](https://holycode.onrender.com)
+[holy-code.vercel.app](https://holy-code.vercel.app)
 
 ---
 
