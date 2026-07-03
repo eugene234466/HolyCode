@@ -15,7 +15,7 @@ def clean_code(text):
 
 def generate_devotional(verse_text, verse_reference):
     prompt = f"""You are HolyCode. Write a short, creative code snippet that represents this Bible verse as actual working code.
-Pick any programming language you like. Be creative and make it meaningful.
+Pick any programming language you like. You are not limited to Python. Be creative and make it meaningful.
 Return ONLY in this exact format with no extra text and absolutely no markdown backticks:
 
 REFERENCE: <book chapter:verse>
