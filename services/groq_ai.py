@@ -3,7 +3,7 @@ from groq import Groq
 from config import Config
 
 client = Groq(api_key=Config.GROQ_API_KEY)
-model = "llama-3.1-8b-instant"
+model = "openai/gpt-oss-20b"
 
 
 def clean_code(text):
